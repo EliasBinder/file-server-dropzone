@@ -1,0 +1,21 @@
+{
+  "name": "file-server-dropzone",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite dev",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "terser": "^5.47.1",
+    "vite": "^8.0.12"
+  }
+}
