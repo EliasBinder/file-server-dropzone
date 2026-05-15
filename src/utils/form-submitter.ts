@@ -35,24 +35,23 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
         size: file.size,
       }));
 
-      const searchParams = new URLSearchParams(window.location.search);
+      const url = new URL(window.location.href);
+      const searchParams = new URLSearchParams(url.search);
+      searchParams.append(dropzone.getActionName(), "generate_presigned_urls");
       const searchParamsObj = Object.fromEntries(searchParams.entries());
 
       // Generate S3 pre-signed URLs for each file
       const genLinksFormData = new FormData();
       genLinksFormData.append("files", JSON.stringify(fileMapping));
-      genLinksFormData.append(
-        dropzone.getActionName(),
-        "generate_presigned_urls",
-      );
       for (const [key, value] of Object.entries(searchParamsObj)) {
         genLinksFormData.append(key, value);
       }
 
       let genLinksResponse;
 
+      const genLinksUrl = `${url.origin}${url.pathname}?${searchParams.toString()}`;
       try {
-        genLinksResponse = await fetch(window.location.href, {
+        genLinksResponse = await fetch(genLinksUrl, {
           method: "POST",
           body: genLinksFormData,
         }).then((res) => res.json());
