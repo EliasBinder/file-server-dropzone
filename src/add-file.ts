@@ -48,7 +48,7 @@ export class AddFile extends HTMLElement {
 
   private containerStyle = {
     with: "100%",
-    height: "150px",
+    height: "120px",
     display: "flex",
     flexDirection: "column",
     overflow: "visible",

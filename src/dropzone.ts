@@ -391,7 +391,7 @@ export class Dropzone extends HTMLElement {
     padding: "20px",
     gap: "16px",
     display: "inline-grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 160px))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(100px, 130px))",
   };
 
   private containerStyleDragging = {
