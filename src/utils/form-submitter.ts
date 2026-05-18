@@ -81,11 +81,9 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
       try {
         await Promise.all(
           files.map((file, i) => {
-            console.log("genLinksResponse", genLinksResponse);
             const url = genLinksResponse.urls.find(
               (item: any) => item.index === i,
             )?.url;
-            console.log("Uploading file", file.name, "to URL", url);
             if (!url) {
               throw new Error(`No pre-signed URL found for file index ${i}`);
             }
@@ -136,7 +134,7 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
 
       // Complete
       dropzone.setStep("completed");
-      setTimeout(form.submit, 1000);
+      setTimeout(() => form.submit(), 1000);
     });
   }
 };
