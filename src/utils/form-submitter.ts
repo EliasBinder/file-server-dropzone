@@ -83,12 +83,12 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
           files.map((file, i) => {
             const url = genLinksResponse.urls.find(
               (item: any) => item.index === i,
-            );
+            )?.url;
             if (!url) {
               throw new Error(`No pre-signed URL found for file index ${i}`);
             }
             const xmlHttpRequest = new XMLHttpRequest();
-            xmlHttpRequest.open("PUT", url.presigned_url, true);
+            xmlHttpRequest.open("PUT", url, true);
             xmlHttpRequest.setRequestHeader("Content-Type", file.type);
             xmlHttpRequest.upload.onprogress = (event) => {
               if (event.lengthComputable) {
