@@ -1,0 +1,15 @@
+{
+  "drag_and_drop": "Ziehe Dateien hierher oder klicke, um Dateien auszuwählen.",
+  "max_files": "Maximale Anzahl von Dateien: {{maxFiles}}",
+  "unlimited": "Unbegrenzt",
+  "accepted_types": "Akzeptierte Dateitypen: {{acceptedTypes}}",
+  "all": "Alle",
+  "preparing": "Vorbereiten...",
+  "uploading": "Dateien werden hochgeladen",
+  "finished": "Abgeschlossen!",
+  "error_max_files_exceeded": "Du kannst maximal {{maxFiles}} Dateien hinzufügen. Bitte entferne zuerst einige Dateien, bevor du weitere hinzufügst.",
+  "error_min_files_not_met": "Du musst mindestens {{minFiles}} Dateien hinzufügen",
+  "error_type_not_accepted": "Die Datei {{fileName}} hat einen nicht unterstützten Dateityp und wird nicht hinzugefügt.",
+  "error_file_too_large": "Die Datei {{fileName}} ist zu groß. Das Maximum ist {{limit}} MB, die aktuelle Dateigröße ist {{size}} MB.",
+  "add": "Hinzufügen"
+}

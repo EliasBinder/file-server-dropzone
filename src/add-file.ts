@@ -1,6 +1,7 @@
 import { serializeStyles } from "./utils/styler";
 import filePlus from "./assets/file-plus.svg";
 import type { Dropzone } from "./dropzone";
+import { translate } from "./lang/language";
 
 export class AddFile extends HTMLElement {
   private root: ShadowRoot | null = null;
@@ -24,7 +25,7 @@ export class AddFile extends HTMLElement {
           <div style="${serializeStyles(this.iconContainerStyle)}">
             <img src="${filePlus}" alt="Add File Icon" style="${serializeStyles(this.iconStyle)};" />
           </div>
-          <span style="${serializeStyles(this.fileNameStyle)}">Hinzufügen</span>
+          <span style="${serializeStyles(this.fileNameStyle)}">${translate("add")}</span>
         </div>
       `;
 

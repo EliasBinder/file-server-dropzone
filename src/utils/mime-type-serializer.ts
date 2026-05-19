@@ -1,39 +1,53 @@
-export const serializeMimeType = (mimeType: string): string => {
+import type { TAcceptedFileType } from "../dropzone";
+
+export const serializeMimeType = (
+  acceptedFileType: TAcceptedFileType,
+): string => {
+  const mimeType = acceptedFileType.type;
+  let description = "";
   if (mimeType.includes("/")) {
     const left = mimeType.split("/")[0]!;
     const right = mimeType.split("/")[1]!;
 
     if (left === "*" && right === "*") {
-      return "Alle Dateien";
+      description = "Alle Dateien";
     } else if (left === "*") {
-      return right;
+      description = right;
     } else if (right === "*") {
-      return left + "s";
+      description = left + "s";
     } else {
-      return right;
+      description = right;
     }
   }
-  return mimeType;
+
+  const limit = acceptedFileType.limit
+    ? ` (max. ${acceptedFileType.limit} MB)`
+    : "";
+  if (description) {
+    return description + limit;
+  }
+  return mimeType + limit;
 };
 
-export const isMimeTypeAccepted = (
+export const findAcceptedFileType = (
   fileType: string,
-  acceptedFileTypes: string[],
-): boolean => {
+  acceptedFileTypes: TAcceptedFileType[],
+) => {
   for (const acceptedType of acceptedFileTypes) {
-    if (acceptedType.includes("/")) {
-      const [acceptedLeft, acceptedRight] = acceptedType.split("/");
+    const mimeType = acceptedType.type;
+    if (mimeType.includes("/")) {
+      const [acceptedLeft, acceptedRight] = mimeType.split("/");
       const [fileLeft, fileRight] = fileType.split("/");
 
       if (
         (acceptedLeft === "*" || acceptedLeft === fileLeft) &&
         (acceptedRight === "*" || acceptedRight === fileRight)
       ) {
-        return true;
+        return acceptedType;
       }
-    } else if (acceptedType === fileType) {
-      return true;
+    } else if (mimeType === fileType) {
+      return acceptedType;
     }
   }
-  return false;
+  return null;
 };

@@ -7,13 +7,18 @@ import octagonAlertIcon from "./assets/octagon-alert.svg";
 import { File as UIFile } from "./file";
 import { AddFile } from "./add-file";
 import {
-  isMimeTypeAccepted,
+  findAcceptedFileType,
   serializeMimeType,
 } from "./utils/mime-type-serializer";
 import { interceptFormSubmit } from "./utils/form-submitter";
 import { ProgressBar } from "./progress-bar";
+import { translate } from "./lang/language";
 
 type TStep = "select-files" | "preparing" | "uploading" | "completed";
+export type TAcceptedFileType = {
+  type: string;
+  limit?: number;
+};
 
 export class Dropzone extends HTMLElement {
   private root: ShadowRoot | null = null;
@@ -26,11 +31,20 @@ export class Dropzone extends HTMLElement {
   private files = [] as File[];
   private fileInput = document.createElement("input");
 
+  private ghostFileInput = document.createElement("input");
+  private filesMetadata: {
+    name: string;
+    uuid: string;
+    type: string;
+    size: number;
+  }[] = [];
+
   private config = {
     maxFiles: NaN,
     minFiles: 0,
-    acceptedFileTypes: [] as string[],
+    acceptedFileTypes: [] as TAcceptedFileType[],
     actionName: "Action",
+    inputName: "files",
   };
 
   constructor() {
@@ -59,13 +73,17 @@ export class Dropzone extends HTMLElement {
         this.config.acceptedFileTypes = typesJson;
       } else {
         console.warn(
-          "[FileServer Dropzone] Invalid format for accepted-file-types attribute. Expected a JSON array of strings.",
+          "[FileServer Dropzone] Invalid format for accepted-file-types attribute. Expected a JSON array of objects with type and limit? properties.",
         );
       }
     }
 
     if (this.hasAttribute("action-name")) {
       this.config.actionName = this.getAttribute("action-name") || "Action";
+    }
+
+    if (this.hasAttribute("input-name")) {
+      this.config.inputName = this.getAttribute("input-name") || "files";
     }
 
     // Configure file input
@@ -127,16 +145,20 @@ export class Dropzone extends HTMLElement {
             <div style="${serializeStyles(this.imageContainerStyle, this.dragCounter > 0 ? this.imageContainerStyleDragging : {})}">
               <img src="${uploadIcon}" alt="Upload Icon" style="${serializeStyles(this.imageStyle)}" />
             </div>
-            <span style="${serializeStyles(this.spanStyle)}">Ziehe Dateien hierher oder klicke, um Dateien auszuwählen.</span>
+            <span style="${serializeStyles(this.spanStyle)}">${translate("drag_and_drop")}</span>
             <div style="${serializeStyles(this.infoContainerStyle)}">
-              <span style="${serializeStyles(this.infoNumFilesStyle, this.dragCounter > 0 ? this.infoNumFilesStyleDragging : {})}">Maximale Anzahl an Dateien: ${isNaN(this.config.maxFiles) ? "Unbegrenzt" : this.config.maxFiles}</span  >
-              <span style="${serializeStyles(this.infoFileTypesStyle)}">Akzeptierte Dateitypen: ${
-                this.config.acceptedFileTypes.length > 0
-                  ? this.config.acceptedFileTypes
-                      .map(serializeMimeType)
-                      .join(", ")
-                  : "Alle"
-              }</span>
+              <span style="${serializeStyles(this.infoNumFilesStyle, this.dragCounter > 0 ? this.infoNumFilesStyleDragging : {})}">${translate("max_files", { maxFiles: isNaN(this.config.maxFiles) ? translate("unlimited") : this.config.maxFiles.toString() })}</span>
+              <span style="${serializeStyles(this.infoFileTypesStyle)}">${translate(
+                "accepted_types",
+                {
+                  acceptedTypes:
+                    this.config.acceptedFileTypes.length > 0
+                      ? this.config.acceptedFileTypes
+                          .map(serializeMimeType)
+                          .join(", ")
+                      : translate("all"),
+                },
+              )}</span>
             </div>
           `
               : this.step === "preparing"
@@ -150,21 +172,21 @@ export class Dropzone extends HTMLElement {
             <div style="${serializeStyles(this.imageContainerStyle)}">
               <img src="${loadingIcon}" alt="Loading Icon" style="${serializeStyles(this.imageStyle, this.imageStyleLoading)}" />
             </div>
-            <span style="${serializeStyles(this.spanStyle)}">Vorbereiten...</span>
+            <span style="${serializeStyles(this.spanStyle)}">${translate("preparing")}</span>
           `
                 : this.step === "uploading"
                   ? `
               <div style="${serializeStyles(this.imageContainerStyle)}">
                 <img src="${cloudUploadIcon}" alt="Upload Icon" style="${serializeStyles(this.imageStyle)}" />
               </div>
-              <span style="${serializeStyles(this.spanStyle)}">Dateien werden hochgeladen</span>
+              <span style="${serializeStyles(this.spanStyle)}">${translate("uploading")}</span>
             `
                   : this.step === "completed"
                     ? `
               <div style="${serializeStyles(this.imageContainerStyle)}">
                 <img src="${checkIcon}" alt="Upload Icon" style="${serializeStyles(this.imageStyle)}" />
               </div>
-              <span style="${serializeStyles(this.spanStyle)}">Abgeschlossen!</span>
+              <span style="${serializeStyles(this.spanStyle)}">${translate("finished")}</span>
             `
                     : ""
           }
@@ -210,6 +232,13 @@ export class Dropzone extends HTMLElement {
         const progressBar = new ProgressBar();
         progressBar.setAttribute("progress", this.progress.toString());
         dropzoneContainer.appendChild(progressBar);
+      } else if (this.step === "completed") {
+        // Configure ghost file input for form submission. Add filenames, mimeTypes and sizes as data attributes for server-side processing, but not the actual files
+        this.ghostFileInput.type = "hidden";
+        this.ghostFileInput.name = this.config.inputName;
+        this.ghostFileInput.value = JSON.stringify(this.filesMetadata);
+        // Add ghost input
+        dropzoneContainer.appendChild(this.ghostFileInput);
       }
     }
   }
@@ -227,7 +256,9 @@ export class Dropzone extends HTMLElement {
       this.files.length + files.length > this.config.maxFiles
     ) {
       alert(
-        `Du kannst maximal ${this.config.maxFiles} Dateien hinzufügen. Bitte entferne zuerst einige Dateien, bevor du weitere hinzufügst.`,
+        translate("error_max_files_exceeded", {
+          maxFiles: this.config.maxFiles.toString(),
+        }),
       );
       return this.render();
     }
@@ -235,13 +266,32 @@ export class Dropzone extends HTMLElement {
     // Enforce accepted file types
     if (this.config.acceptedFileTypes.length > 0) {
       for (let i = 0; i < files.length; i++) {
-        if (
-          !isMimeTypeAccepted(files[i]!.type, this.config.acceptedFileTypes)
-        ) {
+        const acceptedFileType = findAcceptedFileType(
+          files[i]!.type,
+          this.config.acceptedFileTypes,
+        );
+        if (!acceptedFileType) {
           alert(
-            `Die Datei "${files[i]!.name}" hat einen nicht unterstützten Dateityp und wird nicht hinzugefügt.`,
+            translate("error_type_not_accepted", {
+              fileName: files[i]!.name,
+            }),
           );
           return this.render();
+        } else {
+          // Check file size
+          const fileSizeLimit = acceptedFileType.limit
+            ? acceptedFileType.limit * 1024 * 1024
+            : Infinity;
+          if (files[i]!.size > fileSizeLimit) {
+            alert(
+              translate("error_file_too_large", {
+                fileName: files[i]!.name,
+                limit: acceptedFileType.limit!.toString(),
+                size: (fileSizeLimit / (1024 * 1024)).toString(),
+              }),
+            );
+            return this.render();
+          }
         }
       }
     }
@@ -305,27 +355,42 @@ export class Dropzone extends HTMLElement {
 
   public validateFiles() {
     if (this.files.length < this.config.minFiles) {
-      return `Du musst mindestens ${this.config.minFiles} Dateien hinzufügen.`;
+      return translate("error_min_files_not_met", {
+        minFiles: this.config.minFiles.toString(),
+      });
     }
 
     if (
       !isNaN(this.config.maxFiles) &&
       this.files.length > this.config.maxFiles
     ) {
-      return `Du kannst maximal ${this.config.maxFiles} Dateien hinzufügen. Bitte entferne zuerst einige Dateien, bevor du weitere hinzufügst.`;
+      return translate("error_max_files_exceeded", {
+        maxFiles: this.config.maxFiles.toString(),
+      });
     }
 
     if (this.config.acceptedFileTypes.length > 0) {
       for (let i = 0; i < this.files.length; i++) {
-        if (
-          !isMimeTypeAccepted(
-            this.files[i]!.type,
-            this.config.acceptedFileTypes,
-          )
-        ) {
-          return `Die Datei "${this.files[i]!.name}" hat einen nicht unterstützten Dateityp. Akzeptierte Dateitypen sind: ${this.config.acceptedFileTypes
-            .map(serializeMimeType)
-            .join(", ")}.`;
+        const acceptedFileType = findAcceptedFileType(
+          this.files[i]!.type,
+          this.config.acceptedFileTypes,
+        );
+        if (!acceptedFileType) {
+          return translate("error_type_not_accepted", {
+            fileName: this.files[i]!.name,
+          });
+        } else {
+          // Check file size
+          const fileSizeLimit = acceptedFileType.limit
+            ? acceptedFileType.limit * 1024 * 1024
+            : Infinity;
+          if (this.files[i]!.size > fileSizeLimit) {
+            return translate("error_file_too_large", {
+              fileName: this.files[i]!.name,
+              limit: acceptedFileType.limit!.toString(),
+              size: (fileSizeLimit / (1024 * 1024)).toString(),
+            });
+          }
         }
       }
     }
@@ -351,6 +416,12 @@ export class Dropzone extends HTMLElement {
     this.error = error;
     this.step = "select-files";
     this.render();
+  }
+
+  public setFilesMetadata(
+    filesMetadata: { name: string; uuid: string; type: string; size: number }[],
+  ) {
+    this.filesMetadata = filesMetadata;
   }
 
   // Styling
