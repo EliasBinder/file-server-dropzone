@@ -5,11 +5,14 @@ type TPresignedUrl = {
   uuid: string;
   url: string;
   fields: {
-    key: string;
-    AWSAccessKeyId: string;
-    policy: string;
-    signature: string;
     "Content-Type": string;
+    acl: string;
+    key: string;
+    policy: string;
+    "x-amz-algorithm": string;
+    "x-amz-credential": string;
+    "x-amz-date": string;
+    "x-amz-signature": string;
   };
 };
 
@@ -161,6 +164,7 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
         if (submitButton) {
           submitButton.disabled = false;
         }
+        console.error("Error during file upload:", error);
         return;
       }
 
