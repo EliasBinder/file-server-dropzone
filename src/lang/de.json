@@ -8,7 +8,7 @@
   "uploading": "Dateien werden hochgeladen",
   "finished": "Abgeschlossen!",
   "error_max_files_exceeded": "Du kannst maximal {{maxFiles}} Dateien hinzufügen. Bitte entferne zuerst einige Dateien, bevor du weitere hinzufügst.",
-  "error_min_files_not_met": "Du musst mindestens {{minFiles}} Dateien hinzufügen",
+  "error_min_files_not_met": "Du musst mindestens {{minFiles}} Datei(en) hinzufügen",
   "error_type_not_accepted": "Die Datei {{fileName}} hat einen nicht unterstützten Dateityp und wird nicht hinzugefügt.",
   "error_file_too_large": "Die Datei {{fileName}} ist zu groß. Das Maximum ist {{limit}} MB, die aktuelle Dateigröße ist {{size}} MB.",
   "add": "Hinzufügen"

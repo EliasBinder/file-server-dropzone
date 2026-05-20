@@ -109,10 +109,10 @@ export class Dropzone extends HTMLElement {
     }
     this.fileInput.style.display = "none"; // Hide the file input
 
+    this.render();
+
     // Upload files using JS, delay form submission until uploads are completed
     interceptFormSubmit(this);
-
-    this.render();
   }
 
   render() {
