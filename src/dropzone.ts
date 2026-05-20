@@ -52,6 +52,17 @@ export class Dropzone extends HTMLElement {
 
     this.root = this.attachShadow({ mode: "open" });
 
+    // Listen for file selection
+    this.fileInput.addEventListener("change", () => {
+      if (this.fileInput.files) {
+        this.onFilesChanged(this.fileInput.files);
+      }
+    });
+  }
+
+  connectedCallback() {
+    this.render();
+
     if (this.hasAttribute("max-files")) {
       this.config.maxFiles = parseInt(
         this.getAttribute("max-files") || "NaN",
@@ -99,17 +110,6 @@ export class Dropzone extends HTMLElement {
       this.fileInput.accept = "*/*";
     }
     this.fileInput.style.display = "none"; // Hide the file input
-
-    // Listen for file selection
-    this.fileInput.addEventListener("change", () => {
-      if (this.fileInput.files) {
-        this.onFilesChanged(this.fileInput.files);
-      }
-    });
-  }
-
-  connectedCallback() {
-    this.render();
 
     // Upload files using JS, delay form submission until uploads are completed
     interceptFormSubmit(this);
