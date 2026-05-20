@@ -61,8 +61,6 @@ export class Dropzone extends HTMLElement {
   }
 
   connectedCallback() {
-    this.render();
-
     if (this.hasAttribute("max-files")) {
       this.config.maxFiles = parseInt(
         this.getAttribute("max-files") || "NaN",
@@ -113,6 +111,8 @@ export class Dropzone extends HTMLElement {
 
     // Upload files using JS, delay form submission until uploads are completed
     interceptFormSubmit(this);
+
+    this.render();
   }
 
   render() {
