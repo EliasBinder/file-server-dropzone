@@ -173,7 +173,11 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
       dropzone.setStep("completed");
       setTimeout(() => {
         try {
-          form.submit();
+          if (dropzone.onSubmit) {
+            dropzone.onSubmit(filesMetadata);
+          } else {
+            form.submit();
+          }
         } catch (error) {
           console.error(
             "Error submitting form (the form html tag is missing attributes):",

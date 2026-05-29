@@ -14,7 +14,7 @@ import { interceptFormSubmit } from "./utils/form-submitter";
 import { ProgressBar } from "./progress-bar";
 import { translate } from "./lang/language";
 
-type TStep = "select-files" | "preparing" | "uploading" | "completed";
+export type TStep = "select-files" | "preparing" | "uploading" | "completed";
 export type TAcceptedFileType = {
   type: string;
   limit?: number;
@@ -46,6 +46,17 @@ export class Dropzone extends HTMLElement {
     actionName: "Action",
     inputName: "files",
   };
+
+  public onSubmit:
+    | ((
+        metadata: {
+          name: string;
+          uuid: string;
+          size: number;
+          type: string;
+        }[],
+      ) => void)
+    | null = null;
 
   constructor() {
     super();
