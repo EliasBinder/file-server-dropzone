@@ -170,12 +170,15 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
 
       // Complete
       dropzone.setFilesMetadata(filesMetadata);
+      console.log("All files uploaded successfully. Metadata:", filesMetadata);
       dropzone.setStep("completed");
       setTimeout(() => {
         try {
           if (dropzone.onSubmit) {
             dropzone.onSubmit(filesMetadata);
           } else {
+            const ghostInput = dropzone.ghostFileInput;
+            form.appendChild(ghostInput);
             form.submit();
           }
         } catch (error) {

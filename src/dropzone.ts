@@ -31,7 +31,7 @@ export class Dropzone extends HTMLElement {
   private files = [] as File[];
   private fileInput = document.createElement("input");
 
-  private ghostFileInput = document.createElement("input");
+  public ghostFileInput = document.createElement("input");
   private filesMetadata: {
     name: string;
     uuid: string;
@@ -39,7 +39,7 @@ export class Dropzone extends HTMLElement {
     size: number;
   }[] = [];
 
-  private config = {
+  public config = {
     maxFiles: NaN,
     minFiles: 0,
     acceptedFileTypes: [] as TAcceptedFileType[],
@@ -243,13 +243,6 @@ export class Dropzone extends HTMLElement {
         const progressBar = new ProgressBar();
         progressBar.setAttribute("progress", this.progress.toString());
         dropzoneContainer.appendChild(progressBar);
-      } else if (this.step === "completed") {
-        // Configure ghost file input for form submission. Add filenames, mimeTypes and sizes as data attributes for server-side processing, but not the actual files
-        this.ghostFileInput.type = "hidden";
-        this.ghostFileInput.name = this.config.inputName;
-        this.ghostFileInput.value = JSON.stringify(this.filesMetadata);
-        // Add ghost input
-        dropzoneContainer.appendChild(this.ghostFileInput);
       }
     }
   }
@@ -433,6 +426,9 @@ export class Dropzone extends HTMLElement {
     filesMetadata: { name: string; uuid: string; type: string; size: number }[],
   ) {
     this.filesMetadata = filesMetadata;
+    this.ghostFileInput.type = "hidden";
+    this.ghostFileInput.name = this.config.inputName;
+    this.ghostFileInput.value = JSON.stringify(this.filesMetadata);
   }
 
   // Styling
