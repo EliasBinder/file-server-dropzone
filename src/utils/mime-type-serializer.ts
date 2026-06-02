@@ -1,8 +1,9 @@
-import type { TAcceptedFileType } from "../dropzone";
+import type { TAcceptedFileType } from "../types";
 
 export const serializeMimeType = (
   acceptedFileType: TAcceptedFileType,
 ): string => {
+  console.log(acceptedFileType);
   const mimeType = acceptedFileType.type;
   let description = "";
   if (mimeType.includes("/")) {

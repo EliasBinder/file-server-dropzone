@@ -37,8 +37,15 @@
             enctype="multipart/form-data"
         >
             <fs-dropzone
-                accepted-file-types='["application/pdf", "image/*"]'
+                accepted-file-types='[{"type": "application/pdf"}, {"type": "image/*", "limit": 10}]'
             ></fs-dropzone>
+
+            <div style="height: 50px"></div>
+
+            <fs-fileinput
+                accepted-file-types='[{"type": "application/pdf"}, {"type": "image/*", "limit": 10}]'
+            ></fs-fileinput>
+
             <button type="submit" style="margin-top: 50px">Submit form</button>
         </form>
         <script type="module" src="/src/index.ts"></script>

@@ -1,4 +1,5 @@
 import type { Dropzone } from "../dropzone";
+import type { UploadElement } from "../upload-element";
 
 type TPresignedUrl = {
   index: number;
@@ -16,9 +17,9 @@ type TPresignedUrl = {
   };
 };
 
-export const interceptFormSubmit = (dropzone: Dropzone) => {
+export const interceptFormSubmit = (uploadElement: UploadElement) => {
   // get closest form
-  const form = dropzone.closest("form");
+  const form = uploadElement.closest("form");
 
   if (form) {
     form.addEventListener("submit", async (event) => {
@@ -32,18 +33,18 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
         submitButton.disabled = true;
       }
 
-      const validation = dropzone.validateFiles();
+      const validation = uploadElement.validateFiles();
       if (validation) {
-        dropzone.setError(validation);
+        uploadElement.setError(validation);
         if (submitButton) {
           submitButton.disabled = false;
         }
         return;
       }
 
-      dropzone.setStep("preparing");
+      uploadElement.setStep("preparing");
 
-      const files = dropzone.getFiles();
+      const files = uploadElement.getFiles();
       const fileMapping = files.map((file, i) => ({
         index: i,
         filename: file.name,
@@ -53,7 +54,10 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
 
       const url = new URL(window.location.href);
       const searchParams = new URLSearchParams(url.search);
-      searchParams.append(dropzone.getActionName(), "generate_presigned_urls");
+      searchParams.append(
+        uploadElement.getActionName(),
+        "generate_presigned_urls",
+      );
       const searchParamsObj = Object.fromEntries(searchParams.entries());
 
       // Generate S3 pre-signed URLs for each file
@@ -72,7 +76,7 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
           body: genLinksFormData,
         }).then((res) => res.json());
       } catch (error) {
-        dropzone.setError(
+        uploadElement.setError(
           "Failed to generate pre-signed URLs. Please try again.",
         );
         if (submitButton) {
@@ -82,7 +86,7 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
       }
 
       // Upload Files
-      dropzone.setStep("uploading");
+      uploadElement.setStep("uploading");
       const progress: number[] = []; // Track progress for each file (0-100)
       const updateProgress = () => {
         let totalProgress = 0;
@@ -90,7 +94,7 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
           totalProgress += progress[i] || 0;
         }
         const overallProgress = Math.round(totalProgress / files.length);
-        dropzone.setProgress(overallProgress);
+        uploadElement.setProgress(overallProgress);
       };
 
       // Upload each file to S3 using the pre-signed URLs
@@ -158,7 +162,7 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
           }),
         );
       } catch (error) {
-        dropzone.setError(
+        uploadElement.setError(
           "Failed to upload files. Please check your network connection and try again.",
         );
         if (submitButton) {
@@ -169,25 +173,23 @@ export const interceptFormSubmit = (dropzone: Dropzone) => {
       }
 
       // Complete
-      dropzone.setFilesMetadata(filesMetadata);
+      uploadElement.setFilesMetadata(filesMetadata);
       console.log("All files uploaded successfully. Metadata:", filesMetadata);
-      dropzone.setStep("completed");
-      setTimeout(() => {
-        try {
-          if (dropzone.onSubmit) {
-            dropzone.onSubmit(filesMetadata);
-          } else {
-            const ghostInput = dropzone.ghostFileInput;
-            form.appendChild(ghostInput);
-            form.submit();
-          }
-        } catch (error) {
-          console.error(
-            "Error submitting form (the form html tag is missing attributes):",
-            error,
-          );
+      uploadElement.setStep("completed");
+      try {
+        if (uploadElement.onSubmit) {
+          uploadElement.onSubmit(filesMetadata);
+        } else {
+          const ghostInput = uploadElement.ghostFileInput;
+          form.appendChild(ghostInput);
+          form.submit();
         }
-      }, 1000);
+      } catch (error) {
+        console.error(
+          "Error submitting form (the form html tag is missing attributes):",
+          error,
+        );
+      }
     });
   }
 };

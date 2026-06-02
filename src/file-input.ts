@@ -1,104 +1,218 @@
-import type { Dropzone, TStep } from "./dropzone";
-import { interceptFormSubmit } from "./utils/form-submitter";
+import { UploadElement } from "./upload-element";
+import { serializeStyles } from "./utils/styler";
+import octagonAlertIcon from "./assets/octagon-alert.svg";
+import fileCheckIcon from "./assets/file-check.svg";
+import folderIcon from "./assets/folder.svg";
+import cloudUploadIcon from "./assets/cloud-upload.svg";
+import checkIcon from "./assets/check.svg";
+import { serializeMimeType } from "./utils/mime-type-serializer";
+import { translate } from "./lang/language";
+import loadingIcon from "./assets/loader-circle.svg";
+import { ProgressBar } from "./progress-bar";
 
-export class FileInput extends HTMLElement {
-  private root: ShadowRoot | null = null;
-  private step: TStep = "select-files";
-
-  private progress = 0;
-  private error = null as string | null;
-
-  private files = [] as File[];
-  private fileInput = document.createElement("input");
-
-  private ghostFileInput = document.createElement("input");
-  private filesMetadata: {
-    name: string;
-    uuid: string;
-    type: string;
-    size: number;
-  }[] = [];
-
-  private config = {
-    maxFiles: NaN,
-    minFiles: 0,
-    acceptedFileTypes: [] as TAcceptedFileType[],
-    actionName: "Action",
-    inputName: "files",
-  };
-
+export class FileInput extends UploadElement {
   constructor() {
     super();
-
-    this.root = this.attachShadow({ mode: "open" });
-
-    // Listen for file selection
-    this.fileInput.addEventListener("change", () => {
-      if (this.fileInput.files) {
-        this.onFilesChanged(this.fileInput.files);
-      }
-    });
   }
 
-  connectedCallback() {
-    if (this.hasAttribute("max-files")) {
-      this.config.maxFiles = parseInt(
-        this.getAttribute("max-files") || "NaN",
-        10,
-      );
-    }
+  override connectedCallback() {
+    super.connectedCallback();
 
-    if (this.hasAttribute("min-files")) {
-      this.config.minFiles = parseInt(
-        this.getAttribute("min-files") || "0",
-        10,
-      );
-    }
-
-    if (this.hasAttribute("accepted-file-types")) {
-      const types = this.getAttribute("accepted-file-types");
-      const typesJson = types ? JSON.parse(types) : [];
-      if (Array.isArray(typesJson)) {
-        this.config.acceptedFileTypes = typesJson;
-      } else {
-        console.warn(
-          "[FileServer Dropzone] Invalid format for accepted-file-types attribute. Expected a JSON array of objects with type and limit? properties.",
-        );
-      }
-    }
-
-    if (this.hasAttribute("action-name")) {
-      this.config.actionName = this.getAttribute("action-name") || "Action";
-    }
-
-    if (this.hasAttribute("input-name")) {
-      this.config.inputName = this.getAttribute("input-name") || "files";
-    }
-
-    // Configure file input
-    this.fileInput.type = "file";
-    if (!isNaN(this.config.maxFiles)) {
-      this.fileInput.multiple = this.config.maxFiles > 1;
-    } else {
-      this.fileInput.multiple = true;
-    }
-    if (this.config.acceptedFileTypes.length > 0) {
-      this.fileInput.accept = this.config.acceptedFileTypes.join(",");
-    } else {
-      this.fileInput.accept = "*/*";
-    }
-    this.fileInput.style.display = "none"; // Hide the file input
+    this.config.maxFiles = 1; // FileInput only allows one file
 
     this.render();
-
-    // Upload files using JS, delay form submission until uploads are completed
-    interceptFormSubmit(this as unknown as Dropzone); //TODO: This is a bit hacky, we should find a better way to do this
   }
 
-  render() {
+  override render() {
     if (this.root) {
       this.root.innerHTML = `
+        ${
+          this.error
+            ? `
+          <div style="${serializeStyles(this.errorContainerStyle)}">
+            <img src="${octagonAlertIcon}" alt="Error Icon" style="${serializeStyles(this.errorIconStyle)}" />
+            <span style="${serializeStyles(this.errorTextStyle)}">${this.error}</span>
+          </div>
+        `
+            : ""
+        }
+
+        <div id="fs-container" style="${serializeStyles(this.containerStyle)}">
+          ${
+            this.step === "select-files"
+              ? `
+              <div id="fs-browse" style="${serializeStyles(this.browseStyle)}">
+                <img src="${folderIcon}" alt="Upload Icon" style="${serializeStyles(this.browseIcon)}" />
+                ${translate("browse")}
+              </div>
+              ${
+                this.files.length === 0
+                  ? `<span style="${serializeStyles(this.fileInfoStyle)}">${translate(
+                      "accepted_types",
+                      {
+                        acceptedTypes:
+                          this.config.acceptedFileTypes.length > 0
+                            ? this.config.acceptedFileTypes
+                                .map(serializeMimeType)
+                                .join(", ")
+                            : translate("all"),
+                      },
+                    )}</span>
+             `
+                  : `
+                  <div style="${serializeStyles(this.fileInfo)}">
+                    <span><img src="${fileCheckIcon}" alt="File Check Icon" style="${serializeStyles(this.fileCheckIconStyle)}" /></span>
+                    <span style="${serializeStyles(this.fileNameStyle)}">${this.files[0]?.name}</span>
+                  </div>
+            `
+              }`
+              : this.step === "preparing"
+                ? `<span style="${serializeStyles(this.infoIconWrapper)}">
+              <style>
+                @keyframes spin {
+                  from { transform: rotate(0deg); }
+                  to { transform: rotate(360deg); }
+                }
+              </style>
+              <img src="${loadingIcon}" alt="Loading Icon" style="${serializeStyles(this.infoIcon, this.infoIconSpinning)}" />
+              ${translate("preparing")}
+            </span>`
+                : this.step === "uploading"
+                  ? `<span style="${serializeStyles(this.infoIconWrapper)}">
+              <img src="${cloudUploadIcon}" alt="Loading Icon" style="${serializeStyles(this.infoIcon, this.infoIconSpinning)}" />
+              ${translate("uploading")}
+            </span><div style="padding: 12px 14px;" id="fs-progress"></div>`
+                  : this.step === "completed"
+                    ? `<span style="${serializeStyles(this.infoIconWrapper)}">
+              <img src="${checkIcon}" alt="Loading Icon" style="${serializeStyles(this.infoIcon, this.infoIconSpinning)}" />
+              ${translate("finished")}
+              `
+                    : ""
+          }
+        </div>
         `;
+
+      if (this.step === "select-files") {
+        const browseButton = this.root.getElementById(
+          "fs-browse",
+        ) as HTMLDivElement;
+        browseButton.addEventListener("click", () => {
+          this.openFileDialog();
+        });
+      } else if (this.step === "uploading") {
+        const container = this.root.getElementById(
+          "fs-progress",
+        ) as HTMLDivElement;
+        // Add progress bar
+        const progressBar = new ProgressBar();
+        progressBar.setAttribute("progress", this.progress.toString());
+        container.appendChild(progressBar);
+      }
     }
   }
+
+  private containerStyle = {
+    border: "1px solid #ccc",
+    borderRadius: "8px",
+    fontSize: "16px",
+    fontFamily: "Arial, sans-serif",
+    backgroundColor: "#fff",
+    boxSizing: "border-box",
+    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    width: "fit-content",
+  };
+
+  private browseStyle = {
+    padding: "12px 14px",
+    backgroundColor: "hsl(255 0% 90%)",
+    color: "hsl(255 0% 30%)",
+    fontSize: "14px",
+    fontWeight: "bold",
+    cursor: "pointer",
+    userSelect: "none",
+    height: "100%",
+    display: "flex",
+    alignItems: "center",
+  };
+
+  private browseIcon = {
+    width: "20px",
+    height: "20px",
+    marginRight: "8px",
+  };
+
+  private fileCheckIconStyle = {
+    width: "20px",
+    height: "20px",
+  };
+
+  private fileNameStyle = {
+    flex: "1",
+    fontSize: "14px",
+    fontWeight: "bold",
+  };
+
+  private fileInfoStyle = {
+    padding: "12px 14px",
+    flex: "1",
+    fontSize: "12px",
+  };
+
+  private fileInfo = {
+    padding: "0px 14px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "8px",
+  };
+
+  private errorContainerStyle = {
+    width: "100%",
+    backgroundColor: "hsl(0 100% 95%)",
+    border: "1px solid hsl(0 100% 70%)",
+    padding: "10px",
+    borderRadius: "8px",
+    marginBottom: "12px",
+    boxSizing: "border-box",
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+  };
+
+  private errorTextStyle = {
+    color: "hsl(0 100% 50%)",
+    fontSize: "14px",
+    textAlign: "center",
+  };
+
+  private errorIconStyle = {
+    width: "20px",
+    height: "20px",
+    marginRight: "8px",
+    // Make the svg icon red by applying a filter
+    filter:
+      "invert(24%) sepia(100%) saturate(749%) hue-rotate(0deg) brightness(95%) contrast(90%)",
+  };
+
+  private infoIconWrapper = {
+    padding: "12px 14px",
+    display: "flex",
+    gap: "8px",
+    alignItems: "center",
+    fontSize: "12px",
+    justifyContent: "center",
+  };
+
+  private infoIcon = {
+    width: "20px",
+    height: "20px",
+  };
+
+  private infoIconSpinning = {
+    animation: "spin 1s linear infinite",
+  };
 }

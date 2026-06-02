@@ -11,5 +11,6 @@
   "error_min_files_not_met": "You must add at least {{minFiles}} file(s)",
   "error_type_not_accepted": "The file {{fileName}} has an unsupported file type and will not be added.",
   "error_file_too_large": "The file {{fileName}} is too large. The maximum is {{limit}} MB, the current file size is {{size}} MB.",
-  "add": "Add"
+  "add": "Add",
+  "browse": "Browse..."
 }
