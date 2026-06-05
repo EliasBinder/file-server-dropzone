@@ -97,7 +97,9 @@ export class UploadElement extends HTMLElement {
       this.fileInput.multiple = true;
     }
     if (this.config.acceptedFileTypes.length > 0) {
-      this.fileInput.accept = this.config.acceptedFileTypes.join(",");
+      this.fileInput.accept = this.config.acceptedFileTypes
+        .map((t) => t.type)
+        .join(",");
     } else {
       this.fileInput.accept = "*/*";
     }
@@ -118,14 +120,15 @@ export class UploadElement extends HTMLElement {
   }
 
   onFilesChanged(files: FileList) {
+    let filesArray = Array.from(files);
     // Enforce max files limit
     if (
       !isNaN(this.config.maxFiles) &&
-      this.files.length + files.length > this.config.maxFiles
+      this.files.length + filesArray.length > this.config.maxFiles
     ) {
       if (this.config.maxFiles === 1) {
         // Delete existing file and add the new one
-        this.files = [files[0]!];
+        filesArray = filesArray.slice(0, 1);
       } else {
         alert(
           translate("error_max_files_exceeded", {
@@ -138,15 +141,15 @@ export class UploadElement extends HTMLElement {
 
     // Enforce accepted file types
     if (this.config.acceptedFileTypes.length > 0) {
-      for (let i = 0; i < files.length; i++) {
+      for (let i = 0; i < filesArray.length; i++) {
         const acceptedFileType = findAcceptedFileType(
-          files[i]!.type,
+          filesArray[i]!.type,
           this.config.acceptedFileTypes,
         );
         if (!acceptedFileType) {
           alert(
             translate("error_type_not_accepted", {
-              fileName: files[i]!.name,
+              fileName: filesArray[i]!.name,
             }),
           );
           return this.render();
@@ -155,10 +158,10 @@ export class UploadElement extends HTMLElement {
           const fileSizeLimit = acceptedFileType.limit
             ? acceptedFileType.limit * 1024 * 1024
             : Infinity;
-          if (files[i]!.size > fileSizeLimit) {
+          if (filesArray[i]!.size > fileSizeLimit) {
             alert(
               translate("error_file_too_large", {
-                fileName: files[i]!.name,
+                fileName: filesArray[i]!.name,
                 limit: acceptedFileType.limit!.toString(),
                 size: (fileSizeLimit / (1024 * 1024)).toString(),
               }),
@@ -170,8 +173,12 @@ export class UploadElement extends HTMLElement {
     }
 
     // Add new files to the list
-    for (let i = 0; i < files.length; i++) {
-      this.files.push(files[i]!);
+    if (this.config.maxFiles === 1) {
+      this.files = [filesArray[0]!];
+    } else {
+      for (let i = 0; i < filesArray.length; i++) {
+        this.files.push(files[i]!);
+      }
     }
 
     // Clear file input to allow re-selection of the same files if needed

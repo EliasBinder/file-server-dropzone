@@ -27,4 +27,10 @@ export default defineConfig({
     minify: "terser",
     sourcemap: true,
   },
+  server: {
+    watch: {
+      usePolling: true,
+      interval: 100, // Optional: checks for changes every 100ms
+    },
+  },
 });
