@@ -60,7 +60,7 @@ export const interceptFormSubmit = (uploadElement: UploadElement) => {
         uploadFields[key] = value;
       }
 
-      uploadFields = uploadElement.uploadFields || uploadFields;
+      uploadFields = uploadElement.uploadFields ?? uploadFields;
       uploadFields[uploadElement.getActionName()] = "generate_presigned_urls";
 
       // Generate S3 pre-signed URLs for each file

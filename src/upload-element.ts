@@ -30,7 +30,7 @@ export class UploadElement extends HTMLElement {
     inputName: "files",
   };
 
-  public uploadFields: Record<string, any> = {};
+  public uploadFields: Record<string, any> | null = null;
 
   public onSubmit:
     | ((
