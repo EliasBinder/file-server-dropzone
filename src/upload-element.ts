@@ -30,6 +30,8 @@ export class UploadElement extends HTMLElement {
     inputName: "files",
   };
 
+  public uploadFields: Record<string, any> = {};
+
   public onSubmit:
     | ((
         metadata: {
@@ -87,6 +89,12 @@ export class UploadElement extends HTMLElement {
 
     if (this.hasAttribute("input-name")) {
       this.config.inputName = this.getAttribute("input-name") || "files";
+    }
+
+    if (this.hasAttribute("upload-fields")) {
+      this.uploadFields = JSON.parse(
+        this.getAttribute("upload-fields") || "{}",
+      );
     }
 
     // Configure file input

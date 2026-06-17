@@ -58,6 +58,10 @@ export const interceptFormSubmit = (uploadElement: UploadElement) => {
         uploadElement.getActionName(),
         "generate_presigned_urls",
       );
+      const uploadFields = uploadElement.uploadFields;
+      for (const [key, value] of Object.entries(uploadFields)) {
+        searchParams.append(key, value);
+      }
       const searchParamsObj = Object.fromEntries(searchParams.entries());
 
       // Generate S3 pre-signed URLs for each file
