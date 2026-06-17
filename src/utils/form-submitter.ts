@@ -52,28 +52,28 @@ export const interceptFormSubmit = (uploadElement: UploadElement) => {
         size: file.size,
       }));
 
+      let uploadFields = {} as Record<string, any>;
       const url = new URL(window.location.href);
       const searchParams = new URLSearchParams(url.search);
-      searchParams.append(
-        uploadElement.getActionName(),
-        "generate_presigned_urls",
-      );
-      const uploadFields = uploadElement.uploadFields;
-      for (const [key, value] of Object.entries(uploadFields)) {
-        searchParams.append(key, value);
+      // Loop over search Params, add to upload Fields
+      for (const [key, value] of Object.entries(searchParams)) {
+        uploadFields[key] = value;
       }
-      const searchParamsObj = Object.fromEntries(searchParams.entries());
+
+      uploadFields = uploadElement.uploadFields || uploadFields;
+      uploadFields[uploadElement.getActionName()] = "generate_presigned_urls";
 
       // Generate S3 pre-signed URLs for each file
       const genLinksFormData = new FormData();
       genLinksFormData.append("files", JSON.stringify(fileMapping));
-      for (const [key, value] of Object.entries(searchParamsObj)) {
+      for (const [key, value] of Object.entries(uploadFields)) {
         genLinksFormData.append(key, value);
       }
 
       let genLinksResponse;
 
-      const genLinksUrl = `${url.origin}${url.pathname}?${searchParams.toString()}`;
+      let searchParamsNew = new URLSearchParams(uploadFields);
+      const genLinksUrl = `${url.origin}${url.pathname}?${searchParamsNew.toString()}`;
       try {
         genLinksResponse = await fetch(genLinksUrl, {
           method: "POST",
